@@ -100,8 +100,9 @@ with tf.Session() as session:
         # Feed in the training data and do one step of neural network training
         session.run(optimizer, feed_dict={X: X_scaled_training, Y: Y_scaled_training})
 
-        # Print the current training status to the screen
-        print("Training pass: {}".format(epoch))
+        # Every 5 training steps, log our progress
 
     # Training is now complete!
     print("Training is complete!")
+
+

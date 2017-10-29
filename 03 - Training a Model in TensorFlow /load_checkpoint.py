@@ -1,6 +1,10 @@
+import os
 import tensorflow as tf
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
+
+# Turn off TensorFlow warning messages in program output
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 # Load training data set from CSV file
 training_data_df = pd.read_csv("sales_data_training.csv", dtype=float)
@@ -32,7 +36,6 @@ Y_scaled_testing = Y_scaler.transform(Y_testing)
 # Define model parameters
 learning_rate = 0.001
 training_epochs = 100
-display_step = 5
 
 # Define how many inputs and outputs are in our neural network
 number_of_inputs = 9
@@ -84,4 +87,39 @@ with tf.variable_scope('cost'):
 with tf.variable_scope('train'):
     optimizer = tf.train.AdamOptimizer(learning_rate).minimize(cost)
 
+# Create a summary operation to log the progress of the network
+with tf.variable_scope('logging'):
+    tf.summary.scalar('current_cost', cost)
+    summary = tf.summary.merge_all()
 
+saver = tf.train.Saver()
+
+# Initialize a session so that we can run TensorFlow operations
+with tf.Session() as session:
+
+    # When loading from a checkpoint, don't initialize the variables!
+    # session.run(tf.global_variables_initializer())
+
+    # Instead, load them from disk:
+
+    print("Trained model loaded from disk.")
+
+    # Get the final accuracy scores by running the "cost" operation on the training and test data sets
+    training_cost = session.run(cost, feed_dict={X: X_scaled_training, Y: Y_scaled_training})
+    testing_cost = session.run(cost, feed_dict={X: X_scaled_testing, Y: Y_scaled_testing})
+
+    print("Final Training cost: {}".format(training_cost))
+    print("Final Testing cost: {}".format(testing_cost))
+
+    # Now that the neural network is trained, let's use it to make predictions for our test data.
+    # Pass in the X testing data and run the "prediciton" operation
+    Y_predicted_scaled = session.run(prediction, feed_dict={X: X_scaled_testing})
+
+    # Unscale the data back to it's original units (dollars)
+    Y_predicted = Y_scaler.inverse_transform(Y_predicted_scaled)
+
+    real_earnings = test_data_df['total_earnings'].values[0]
+    predicted_earnings = Y_predicted[0][0]
+
+    print("The actual earnings of Game #1 were ${}".format(real_earnings))
+    print("Our neural network predicted earnings of ${}".format(predicted_earnings))
